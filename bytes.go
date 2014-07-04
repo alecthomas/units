@@ -49,11 +49,17 @@ type MetricBytes SI
 // SI base-10 byte units.
 const (
 	Kilobyte MetricBytes = 1000
+	KB                   = Kilobyte
 	Megabyte             = Kilobyte * 1000
+	MB                   = Megabyte
 	Gigabyte             = Megabyte * 1000
+	GB                   = Gigabyte
 	Terabyte             = Gigabyte * 1000
+	TB                   = Terabyte
 	Petabyte             = Terabyte * 1000
+	PB                   = Petabyte
 	Exabyte              = Petabyte * 1000
+	EB                   = Exabyte
 )
 
 // ParseMetricBytes parses base-10 metric byte units. That is, KB is 1000 bytes.
