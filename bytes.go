@@ -1,5 +1,9 @@
 package units
 
+import (
+	"errors"
+)
+
 // Base2Bytes is the old non-SI power-of-2 byte scale (1024 bytes in a kilobyte,
 // etc.).
 type Base2Bytes int64
@@ -25,6 +29,8 @@ var (
 	oldBytesUnitMap = MakeUnitMap("B", "B", 1024)
 )
 
+var ErrIncorrectType = errors.New("not a string or int64")
+
 // ParseBase2Bytes supports both iB and B in base-2 multipliers. That is, KB
 // and KiB are both 1024.
 // However "kB", which is the correct SI spelling of 1000 Bytes, is rejected.
@@ -38,6 +44,24 @@ func ParseBase2Bytes(s string) (Base2Bytes, error) {
 
 func (b Base2Bytes) String() string {
 	return ToString(int64(b), 1024, "iB", "B")
+}
+
+// UnmarshalTOML implements TOML unmarshal interface.
+func (b *Base2Bytes) UnmarshalTOML(value interface{}) error {
+	switch v := value.(type) {
+	case string:
+		var err error
+		*b, err = ParseBase2Bytes(v)
+		if err != nil {
+			return err
+		}
+	case int64:
+		*b = Base2Bytes(v)
+	default:
+		return ErrIncorrectType
+	}
+
+	return nil
 }
 
 var (
