@@ -99,3 +99,24 @@ func TestParseStrictBytes(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1500000, int(n))
 }
+
+func TestUnmarshalTOML(t *testing.T) {
+	b := new(Base2Bytes)
+
+	assert.NoError(t, b.UnmarshalTOML("1KB1B"))
+	assert.Equal(t, 1025, int(*b))
+
+	assert.NoError(t, b.UnmarshalTOML(int64(1000)))
+	assert.Equal(t, 1000, int(*b))
+
+	assert.NoError(t, b.UnmarshalTOML(int64(1001)))
+	assert.Equal(t, 1001, int(*b))
+
+	assert.NoError(t, b.UnmarshalTOML(int64(-10102311)))
+	assert.Equal(t, -10102311, int(*b))
+
+	assert.NoError(t, b.UnmarshalTOML(int64(0)))
+	assert.Equal(t, 0, int(*b))
+
+	assert.Error(t, ErrIncorrectType, b.UnmarshalTOML(uint64(1001)))
+}
