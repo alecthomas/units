@@ -1,6 +1,7 @@
 package units
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -128,4 +129,37 @@ func TestParseStrictBytes(t *testing.T) {
 	n, err = ParseStrictBytes("1.5MB")
 	assert.NoError(t, err)
 	assert.Equal(t, 1500000, int(n))
+}
+
+func TestJSON(t *testing.T) {
+	type args struct {
+		b Base2Bytes
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "0B",
+			args: args{
+				b: 0,
+			},
+		},
+		{
+			name: "1B",
+			args: args{
+				b: 1,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := json.Marshal(tt.args.b)
+			assert.NoError(t, err)
+			var b Base2Bytes
+			err = json.Unmarshal(data, &b)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.args.b.String(), b.String())
+		})
+	}
 }
