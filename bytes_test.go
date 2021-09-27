@@ -72,6 +72,17 @@ func TestBase2BytesUnmarshalText(t *testing.T) {
 	assert.Equal(t, 1572864, int(n))
 }
 
+func TestBase2RoundToLargest(t *testing.T) {
+	var n Base2Bytes = KiB
+	assert.Equal(t, "1KiB", n.Floor().String())
+	n = MiB + KiB
+	assert.Equal(t, "1MiB", n.Floor().String())
+	n = GiB + MiB + KiB
+	assert.Equal(t, "1GiB", n.Floor().String())
+	n = 3*GiB + 2*MiB + KiB
+	assert.Equal(t, "3GiB", n.Floor().String())
+}
+
 func TestMetricBytesString(t *testing.T) {
 	assert.Equal(t, MetricBytes(0).String(), "0B")
 	// TODO: SI standard prefix is lowercase "kB"
@@ -129,6 +140,17 @@ func TestParseStrictBytes(t *testing.T) {
 	n, err = ParseStrictBytes("1.5MB")
 	assert.NoError(t, err)
 	assert.Equal(t, 1500000, int(n))
+}
+
+func TestMetricRoundToLargest(t *testing.T) {
+	var n MetricBytes = KB
+	assert.Equal(t, "1KB", n.Floor().String())
+	n = MB + KB
+	assert.Equal(t, "1MB", n.Floor().String())
+	n = GB + MB + KB
+	assert.Equal(t, "1GB", n.Floor().String())
+	n = 3*GB + 2*MB + KB
+	assert.Equal(t, "3GB", n.Floor().String())
 }
 
 func TestJSON(t *testing.T) {
