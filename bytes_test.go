@@ -72,7 +72,7 @@ func TestBase2BytesUnmarshalText(t *testing.T) {
 	assert.Equal(t, 1572864, int(n))
 }
 
-func TestBase2RoundToLargest(t *testing.T) {
+func TestBase2Floor(t *testing.T) {
 	var n Base2Bytes = KiB
 	assert.Equal(t, "1KiB", n.Floor().String())
 	n = MiB + KiB
@@ -81,6 +81,25 @@ func TestBase2RoundToLargest(t *testing.T) {
 	assert.Equal(t, "1GiB", n.Floor().String())
 	n = 3*GiB + 2*MiB + KiB
 	assert.Equal(t, "3GiB", n.Floor().String())
+}
+
+func TestBase2Round(t *testing.T) {
+	var n Base2Bytes = KiB
+	assert.Equal(t, "1KiB", n.Round(1).String())
+	n = MiB + KiB
+	assert.Equal(t, "1MiB", n.Round(1).String())
+	n = GiB + MiB + KiB
+	assert.Equal(t, "1GiB", n.Round(1).String())
+	n = 3*GiB + 2*MiB + KiB
+	assert.Equal(t, "3GiB", n.Round(1).String())
+	n = KiB
+	assert.Equal(t, "1KiB", n.Round(2).String())
+	n = MiB + KiB
+	assert.Equal(t, "1MiB1KiB", n.Round(2).String())
+	n = GiB + MiB + KiB
+	assert.Equal(t, "1GiB1MiB", n.Round(2).String())
+	n = 3*GiB + 2*MiB + KiB
+	assert.Equal(t, "3GiB2MiB", n.Round(2).String())
 }
 
 func TestMetricBytesString(t *testing.T) {
@@ -142,7 +161,7 @@ func TestParseStrictBytes(t *testing.T) {
 	assert.Equal(t, 1500000, int(n))
 }
 
-func TestMetricRoundToLargest(t *testing.T) {
+func TestMetricFloor(t *testing.T) {
 	var n MetricBytes = KB
 	assert.Equal(t, "1KB", n.Floor().String())
 	n = MB + KB
@@ -151,6 +170,25 @@ func TestMetricRoundToLargest(t *testing.T) {
 	assert.Equal(t, "1GB", n.Floor().String())
 	n = 3*GB + 2*MB + KB
 	assert.Equal(t, "3GB", n.Floor().String())
+}
+
+func TestMetricRound(t *testing.T) {
+	var n MetricBytes = KB
+	assert.Equal(t, "1KB", n.Round(1).String())
+	n = MB + KB
+	assert.Equal(t, "1MB", n.Round(1).String())
+	n = GB + MB + KB
+	assert.Equal(t, "1GB", n.Round(1).String())
+	n = 3*GB + 2*MB + KB
+	assert.Equal(t, "3GB", n.Round(1).String())
+	n = KB
+	assert.Equal(t, "1KB", n.Round(2).String())
+	n = MB + KB
+	assert.Equal(t, "1MB1KB", n.Round(2).String())
+	n = GB + MB + KB
+	assert.Equal(t, "1GB1MB", n.Round(2).String())
+	n = 3*GB + 2*MB + KB
+	assert.Equal(t, "3GB2MB", n.Round(2).String())
 }
 
 func TestJSON(t *testing.T) {
