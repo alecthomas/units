@@ -7,7 +7,7 @@ The goal of this package is to have functionality similar to the [time](http://g
 It allows for code like this:
 
 ```go
-n, err := ParseBase2Bytes("1KB")
-// n == 1024
+n, err := ParseBase2Bytes("1KB 2B")
+// n == 1026
 n = units.Mebibyte * 512
 ```

@@ -50,7 +50,7 @@ func leadingInt(s string) (x int64, rem string, err error) {
 }
 
 func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
-	// [-+]?([0-9]*(\.[0-9]*)?[a-z]+)+
+	// [-+]?([0-9]*(\.[0-9]*)?[a-z]+[ ]?)+
 	orig := s
 	f := float64(0)
 	neg := false
@@ -114,7 +114,7 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 		i := 0
 		for ; i < len(s); i++ {
 			c := s[i]
-			if c == '.' || ('0' <= c && c <= '9') {
+			if c == '.' || ('0' <= c && c <= '9') || c == ' ' {
 				break
 			}
 		}
@@ -123,6 +123,11 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 		unit, ok := unitMap[u]
 		if !ok {
 			return 0, errors.New("units: unknown unit " + u + " in " + orig)
+		}
+
+		// Consume optional space.
+		if len(s) > 0 && s[0] == ' ' {
+			s = s[1:]
 		}
 
 		f += g * unit
