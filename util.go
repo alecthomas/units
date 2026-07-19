@@ -3,6 +3,7 @@ package units
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 )
 
@@ -13,20 +14,38 @@ var (
 func ToString(n int64, scale int64, suffix, baseSuffix string) string {
 	mn := len(siUnits)
 	out := make([]string, mn)
+
+	// Format the unsigned magnitude and prepend a single '-' for negatives.
+	// Using the signed value directly emits a '-' per component (n%scale is
+	// negative for every unit, e.g. "-9EB-223PB-..."), which is unparseable.
+	// The magnitude is held in uint64 so math.MinInt64 is representable (its
+	// negation overflows int64).
+	neg := n < 0
+	mag := uint64(n)
+	if neg {
+		mag = -mag
+	}
+	uscale := uint64(scale)
+
 	for i, m := range siUnits {
-		if n%scale != 0 || i == 0 && n == 0 {
+		if mag%uscale != 0 || i == 0 && mag == 0 {
 			s := suffix
 			if i == 0 {
 				s = baseSuffix
 			}
-			out[mn-1-i] = fmt.Sprintf("%d%s%s", n%scale, m, s)
+			out[mn-1-i] = fmt.Sprintf("%d%s%s", mag%uscale, m, s)
 		}
-		n /= scale
-		if n == 0 {
+		mag /= uscale
+		if mag == 0 {
 			break
 		}
 	}
-	return strings.Join(out, "")
+
+	res := strings.Join(out, "")
+	if neg {
+		res = "-" + res
+	}
+	return res
 }
 
 // Below code ripped straight from http://golang.org/src/pkg/time/format.go?s=33392:33438#L1123
@@ -49,10 +68,14 @@ func leadingInt(s string) (x int64, rem string, err error) {
 	return x, s[i:], nil
 }
 
-func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
+// ParseUnit accumulates with exact rational arithmetic (math/big) rather than
+// float64: unit multipliers reach 1000^6 (1e18) and 1024^6 (2^60), both beyond
+// the 53-bit float64 mantissa, so a float64 accumulator loses precision near the
+// int64 limits and can round MaxInt64 up to MinInt64 on a round-trip.
+func ParseUnit(s string, unitMap map[string]int64) (int64, error) {
 	// [-+]?([0-9]*(\.[0-9]*)?[a-z]+)+
 	orig := s
-	f := float64(0)
+	f := new(big.Rat)
 	neg := false
 
 	// Consume [-+]?
@@ -71,7 +94,7 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 		return 0, errors.New("units: invalid " + orig)
 	}
 	for s != "" {
-		g := float64(0) // this element of the sequence
+		g := new(big.Rat) // this element of the sequence
 
 		var x int64
 		var err error
@@ -86,7 +109,7 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 		if err != nil {
 			return 0, errors.New("units: invalid " + orig)
 		}
-		g = float64(x)
+		g.SetInt64(x)
 		pre := pl != len(s) // whether we consumed anything before a period
 
 		// Consume (\.[0-9]*)?
@@ -98,11 +121,11 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 			if err != nil {
 				return 0, errors.New("units: invalid " + orig)
 			}
-			scale := 1.0
+			scale := int64(1)
 			for n := pl - len(s); n > 0; n-- {
 				scale *= 10
 			}
-			g += float64(x) / scale
+			g.Add(g, new(big.Rat).SetFrac(big.NewInt(x), big.NewInt(scale)))
 			post = pl != len(s)
 		}
 		if !pre && !post {
@@ -125,14 +148,18 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 			return 0, errors.New("units: unknown unit " + u + " in " + orig)
 		}
 
-		f += g * unit
+		g.Mul(g, new(big.Rat).SetInt64(unit))
+		f.Add(f, g)
 	}
 
 	if neg {
-		f = -f
+		f.Neg(f)
 	}
-	if f < float64(-1<<63) || f > float64(1<<63-1) {
+	// Truncate toward zero (preserving the historical int64(f) behaviour for
+	// fractional byte values) with strict overflow detection.
+	res := new(big.Int).Quo(f.Num(), f.Denom())
+	if !res.IsInt64() {
 		return 0, errors.New("units: overflow parsing unit")
 	}
-	return int64(f), nil
+	return res.Int64(), nil
 }

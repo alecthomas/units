@@ -13,15 +13,15 @@ const (
 	Exa     = Peta * 1000
 )
 
-func MakeUnitMap(suffix, shortSuffix string, scale int64) map[string]float64 {
-	res := map[string]float64{
+func MakeUnitMap(suffix, shortSuffix string, scale int64) map[string]int64 {
+	res := map[string]int64{
 		shortSuffix: 1,
 		// see below for "k" / "K"
-		"M" + suffix: float64(scale * scale),
-		"G" + suffix: float64(scale * scale * scale),
-		"T" + suffix: float64(scale * scale * scale * scale),
-		"P" + suffix: float64(scale * scale * scale * scale * scale),
-		"E" + suffix: float64(scale * scale * scale * scale * scale * scale),
+		"M" + suffix: scale * scale,
+		"G" + suffix: scale * scale * scale,
+		"T" + suffix: scale * scale * scale * scale,
+		"P" + suffix: scale * scale * scale * scale * scale,
+		"E" + suffix: scale * scale * scale * scale * scale * scale,
 	}
 
 	// Standard SI prefixes use lowercase "k" for kilo = 1000.
@@ -41,10 +41,10 @@ func MakeUnitMap(suffix, shortSuffix string, scale int64) map[string]float64 {
 	//     -- https://en.wikipedia.org/wiki/Binary_prefix#History
 	//     See also the extensive https://en.wikipedia.org/wiki/Timeline_of_binary_prefixes.
 	if scale == 1024 {
-		res["K"+suffix] = float64(scale)
+		res["K"+suffix] = scale
 	} else {
-		res["k"+suffix] = float64(scale)
-		res["K"+suffix] = float64(scale)
+		res["k"+suffix] = scale
+		res["K"+suffix] = scale
 	}
 	return res
 }
