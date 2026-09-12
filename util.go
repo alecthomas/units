@@ -131,7 +131,7 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 	if neg {
 		f = -f
 	}
-	if f < float64(-1<<63) || f > float64(1<<63-1) {
+	if f < -0x1p63 || f >= 0x1p63 {
 		return 0, errors.New("units: overflow parsing unit")
 	}
 	return int64(f), nil
