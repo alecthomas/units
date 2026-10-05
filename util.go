@@ -11,6 +11,14 @@ var (
 )
 
 func ToString(n int64, scale int64, suffix, baseSuffix string) string {
+	// Format the magnitude, then apply a single leading sign. Using n%scale on a
+	// negative value yields negative remainders (Go truncates toward zero), so
+	// each segment would otherwise get its own "-" (e.g. -1500 -> "-1KiB-476B").
+	sign := ""
+	if n < 0 {
+		sign = "-"
+		n = -n
+	}
 	mn := len(siUnits)
 	out := make([]string, mn)
 	for i, m := range siUnits {
@@ -26,7 +34,7 @@ func ToString(n int64, scale int64, suffix, baseSuffix string) string {
 			break
 		}
 	}
-	return strings.Join(out, "")
+	return sign + strings.Join(out, "")
 }
 
 // Below code ripped straight from http://golang.org/src/pkg/time/format.go?s=33392:33438#L1123
