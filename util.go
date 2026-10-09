@@ -7,13 +7,22 @@ import (
 )
 
 var (
-	siUnits = []string{"", "K", "M", "G", "T", "P", "E"}
+	siUnits       = []string{"", "K", "M", "G", "T", "P", "E"}
+	siMetricUnits = []string{"", "k", "M", "G", "T", "P", "E"}
 )
 
 func ToString(n int64, scale int64, suffix, baseSuffix string) string {
-	mn := len(siUnits)
+	return ToStringWithPrefixes(n, scale, siUnits, suffix, baseSuffix)
+}
+
+// ToStringWithPrefixes formats an integer value into unit components using custom exponent prefixes.
+func ToStringWithPrefixes(n int64, scale int64, prefixes []string, suffix, baseSuffix string) string {
+	mn := len(prefixes)
+	if mn == 0 || scale <= 0 {
+		return fmt.Sprintf("%d%s", n, baseSuffix)
+	}
 	out := make([]string, mn)
-	for i, m := range siUnits {
+	for i, m := range prefixes {
 		if n%scale != 0 || i == 0 && n == 0 {
 			s := suffix
 			if i == 0 {

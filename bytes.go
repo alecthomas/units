@@ -136,9 +136,27 @@ func ParseMetricBytes(s string) (MetricBytes, error) {
 	return MetricBytes(n), err
 }
 
-// TODO: represents 1000B as uppercase "KB", while SI standard requires "kB".
+// String represents 1000B as uppercase "KB" for backward compatibility.
+// Use FormatSI or FormatMetricBytesSI for standard SI "kB" prefix formatting.
 func (m MetricBytes) String() string {
 	return ToString(int64(m), 1000, "B", "B")
+}
+
+// FormatSI formats MetricBytes using standard SI lowercase prefix for kilo ("kB").
+func (m MetricBytes) FormatSI() string {
+	return FormatMetricBytesSI(m)
+}
+
+// MarshalText implements encoding.TextMarshaler to process json/yaml.
+func (m MetricBytes) MarshalText() ([]byte, error) {
+	return []byte(m.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler to process json/yaml.
+func (m *MetricBytes) UnmarshalText(text []byte) error {
+	n, err := ParseMetricBytes(string(text))
+	*m = n
+	return err
 }
 
 // Floor returns MetricBytes with all but the largest unit zeroed out. So that e.g. 1GB1MB1KB → 1GB.
