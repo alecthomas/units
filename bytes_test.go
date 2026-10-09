@@ -104,7 +104,7 @@ func TestBase2Round(t *testing.T) {
 
 func TestMetricBytesString(t *testing.T) {
 	assert.Equal(t, MetricBytes(0).String(), "0B")
-	// TODO: SI standard prefix is lowercase "kB"
+	// MetricBytes.String emits uppercase "KB" for backward compatibility.
 	assert.Equal(t, MetricBytes(1001).String(), "1KB1B")
 	assert.Equal(t, MetricBytes(1001025).String(), "1MB1KB25B")
 }
@@ -220,6 +220,64 @@ func TestJSON(t *testing.T) {
 			err = json.Unmarshal(data, &b)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.args.b.String(), b.String())
+		})
+	}
+}
+
+func TestMetricBytesUnmarshalText(t *testing.T) {
+	var n MetricBytes
+	err := n.UnmarshalText([]byte("0B"))
+	assert.NoError(t, err)
+	assert.Equal(t, 0, int(n))
+	err = n.UnmarshalText([]byte("1kB"))
+	assert.NoError(t, err)
+	assert.Equal(t, 1000, int(n))
+	err = n.UnmarshalText([]byte("1KB"))
+	assert.NoError(t, err)
+	assert.Equal(t, 1000, int(n))
+	err = n.UnmarshalText([]byte("1MB1KB25B"))
+	assert.NoError(t, err)
+	assert.Equal(t, 1001025, int(n))
+	err = n.UnmarshalText([]byte("1.5MB"))
+	assert.NoError(t, err)
+	assert.Equal(t, 1500000, int(n))
+}
+
+func TestMetricJSON(t *testing.T) {
+	type args struct {
+		m MetricBytes
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "0B",
+			args: args{
+				m: 0,
+			},
+		},
+		{
+			name: "1B",
+			args: args{
+				m: 1,
+			},
+		},
+		{
+			name: "1KB",
+			args: args{
+				m: KB,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := json.Marshal(tt.args.m)
+			assert.NoError(t, err)
+			var m MetricBytes
+			err = json.Unmarshal(data, &m)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.args.m.String(), m.String())
 		})
 	}
 }
