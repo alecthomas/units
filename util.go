@@ -3,6 +3,7 @@ package units
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -125,14 +126,18 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 			return 0, errors.New("units: unknown unit " + u + " in " + orig)
 		}
 
-		f += g * unit
+		if unit > 0 && g > float64(math.MaxInt64)/unit {
+			return 0, errors.New("units: overflow parsing unit")
+		}
+		if neg {
+			f -= g * unit
+		} else {
+			f += g * unit
+		}
+		if f < float64(math.MinInt64) || f >= float64(math.MaxInt64) {
+			return 0, errors.New("units: overflow parsing unit")
+		}
 	}
 
-	if neg {
-		f = -f
-	}
-	if f < float64(-1<<63) || f > float64(1<<63-1) {
-		return 0, errors.New("units: overflow parsing unit")
-	}
 	return int64(f), nil
 }

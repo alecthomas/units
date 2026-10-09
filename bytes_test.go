@@ -223,3 +223,45 @@ func TestJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestParseUnitOverflow(t *testing.T) {
+	overflowInputs := []struct {
+		input   string
+		unitMap map[string]float64
+	}{
+		{"8EiB", bytesUnitMap},
+		{"9EiB", bytesUnitMap},
+		{"-9EiB", bytesUnitMap},
+		{"4EiB4EiB", bytesUnitMap},
+		{"-4EiB5EiB", bytesUnitMap},
+		{"7EiB1024PiB", bytesUnitMap},
+		{"10EB", metricBytesUnitMap},
+		{"-10EB", metricBytesUnitMap},
+		{"5EB5EB", metricBytesUnitMap},
+	}
+	for _, tc := range overflowInputs {
+		t.Run(tc.input, func(t *testing.T) {
+			_, err := ParseUnit(tc.input, tc.unitMap)
+			assert.EqualError(t, err, "units: overflow parsing unit")
+		})
+	}
+
+	validInputs := []struct {
+		input   string
+		unitMap map[string]float64
+		want    int64
+	}{
+		{"7EiB", bytesUnitMap, 7 << 60},
+		{"-7EiB", bytesUnitMap, -7 << 60},
+		{"-8EiB", bytesUnitMap, -1 << 63},
+		{"9EB", metricBytesUnitMap, 9 * int64(EB)},
+		{"-9EB", metricBytesUnitMap, -9 * int64(EB)},
+	}
+	for _, tc := range validInputs {
+		t.Run(tc.input, func(t *testing.T) {
+			got, err := ParseUnit(tc.input, tc.unitMap)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
