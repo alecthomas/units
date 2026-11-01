@@ -3,6 +3,7 @@ package units
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -40,7 +41,9 @@ func leadingInt(s string) (x int64, rem string, err error) {
 		if c < '0' || c > '9' {
 			break
 		}
-		if x >= (1<<63-10)/10 {
+	// Check for overflow before x = x*10 + digit, taking the current
+	// digit into account, so that MaxInt64 itself is still accepted.
+	if x > (1<<63-1-int64(c)+'0')/10 {
 			// overflow
 			return 0, "", errLeadingInt
 		}
@@ -52,7 +55,8 @@ func leadingInt(s string) (x int64, rem string, err error) {
 func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 	// [-+]?([0-9]*(\.[0-9]*)?[a-z]+)+
 	orig := s
-	f := float64(0)
+	f := float64(0) // accumulates fractional contributions
+	n := int64(0)   // accumulates integral contributions exactly
 	neg := false
 
 	// Consume [-+]?
@@ -86,7 +90,7 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 		if err != nil {
 			return 0, errors.New("units: invalid " + orig)
 		}
-		g = float64(x)
+		xint := x
 		pre := pl != len(s) // whether we consumed anything before a period
 
 		// Consume (\.[0-9]*)?
@@ -102,7 +106,7 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 			for n := pl - len(s); n > 0; n-- {
 				scale *= 10
 			}
-			g += float64(x) / scale
+			g = float64(x) / scale
 			post = pl != len(s)
 		}
 		if !pre && !post {
@@ -125,14 +129,61 @@ func ParseUnit(s string, unitMap map[string]float64) (int64, error) {
 			return 0, errors.New("units: unknown unit " + u + " in " + orig)
 		}
 
-		f += g * unit
+		// Accumulate integral contributions with exact integer arithmetic.
+		// The unit multipliers reach 1024^6 and 1000^6 (~2^60), so
+		// accumulating in float64 silently loses precision above 2^53.
+		// Fractional parts, and non-integral unit multipliers from custom
+		// unit maps, are still accumulated in float64.
+		if m, integral := integralUnit(unit); integral {
+			var ok bool
+			if n, ok = mulAddInt64(n, xint, m); !ok {
+				return 0, errors.New("units: overflow parsing unit")
+			}
+			f += g * unit
+		} else {
+			f += (float64(xint) + g) * unit
+		}
 	}
 
 	if neg {
+		n = -n
 		f = -f
 	}
-	if f < float64(-1<<63) || f > float64(1<<63-1) {
+	// The fractional accumulator must be within int64 range before it is
+	// truncated towards zero and added to the integral part.
+	if f >= float64(1<<63) || f < float64(-1<<63) {
 		return 0, errors.New("units: overflow parsing unit")
 	}
-	return int64(f), nil
+	r := n + int64(f)
+	if i := int64(f); (i > 0 && r < n) || (i < 0 && r > n) {
+		return 0, errors.New("units: overflow parsing unit")
+	}
+	return r, nil
+}
+
+// integralUnit returns unit as an int64 if it is integral, non-negative and
+// within int64 range.
+func integralUnit(unit float64) (int64, bool) {
+	if unit < 0 || unit >= float64(1<<63) || unit != math.Trunc(unit) {
+		return 0, false
+	}
+	return int64(unit), true
+}
+
+// mulAddInt64 returns a + x*m, reporting whether the operation overflowed.
+// x, produced by leadingInt, and m, produced by integralUnit, are both
+// non-negative.
+func mulAddInt64(a, x, m int64) (int64, bool) {
+	if x == 0 || m == 0 {
+		return a, true
+	}
+	if x > (1<<63-1)/m {
+		return 0, false
+	}
+	p := x * m
+	r := a + p
+	if r < a { // p > 0
+		return 0, false
+	}
+	return r, true
 }
