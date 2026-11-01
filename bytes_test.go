@@ -127,6 +127,40 @@ func TestParseMetricBytes(t *testing.T) {
 	assert.Equal(t, 1500000, int(n))
 }
 
+func TestParseUnitPrecision(t *testing.T) {
+	// Integer contributions are accumulated with exact integer arithmetic;
+	// accumulating in float64 silently lost low bits above 2^53.
+	n, err := ParseBase2Bytes("9007199254740993B") // 2^53 + 1
+	assert.NoError(t, err)
+	assert.Equal(t, int64(9007199254740993), int64(n))
+
+	n, err = ParseBase2Bytes("1EiB1023B") // 1024^6 + 1023
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1024*1024*1024*1024*1024*1024+1023), int64(n))
+
+	m, err := ParseMetricBytes("1EB5000B") // 10^18 + 5000
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1000000000000005000), int64(m))
+
+	// Values up to MaxInt64 parse exactly.
+	n, err = ParseBase2Bytes("9223372036854775807B")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(9223372036854775807), int64(n))
+
+	// Values beyond MaxInt64 still error instead of silently wrapping.
+	_, err = ParseBase2Bytes("9223372036854775808B")
+	assert.Error(t, err)
+	_, err = ParseUnit("8EiB", bytesUnitMap)
+	assert.Error(t, err)
+
+	// Fractional values keep their existing behavior.
+	n, err = ParseBase2Bytes("1.5KiB")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1536), int64(n))
+	n, err = ParseBase2Bytes("0.1KiB")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(102), int64(n))
+}
 func TestParseStrictBytes(t *testing.T) {
 	n, err := ParseStrictBytes("0B")
 	assert.NoError(t, err)
