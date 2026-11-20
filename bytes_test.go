@@ -223,3 +223,13 @@ func TestJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestNegativeByteRounding(t *testing.T) {
+	binary := -(Gibibyte + Mebibyte + Kibibyte)
+	assert.Equal(t, -Gibibyte, binary.Floor())
+	assert.Equal(t, -(Gibibyte + Mebibyte), binary.Round(2))
+
+	metric := -(Gigabyte + Megabyte + Kilobyte)
+	assert.Equal(t, -Gigabyte, metric.Floor())
+	assert.Equal(t, -(Gigabyte + Megabyte), metric.Round(2))
+}
