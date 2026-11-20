@@ -55,17 +55,17 @@ func (b *Base2Bytes) UnmarshalText(text []byte) error {
 // Floor returns Base2Bytes with all but the largest unit zeroed out. So that e.g. 1GiB1MiB1KiB → 1GiB.
 func (b Base2Bytes) Floor() Base2Bytes {
 	switch {
-	case b > Exbibyte:
+	case b > Exbibyte || b < -Exbibyte:
 		return (b / Exbibyte) * Exbibyte
-	case b > Pebibyte:
+	case b > Pebibyte || b < -Pebibyte:
 		return (b / Pebibyte) * Pebibyte
-	case b > Tebibyte:
+	case b > Tebibyte || b < -Tebibyte:
 		return (b / Tebibyte) * Tebibyte
-	case b > Gibibyte:
+	case b > Gibibyte || b < -Gibibyte:
 		return (b / Gibibyte) * Gibibyte
-	case b > Mebibyte:
+	case b > Mebibyte || b < -Mebibyte:
 		return (b / Mebibyte) * Mebibyte
-	case b > Kibibyte:
+	case b > Kibibyte || b < -Kibibyte:
 		return (b / Kibibyte) * Kibibyte
 	default:
 		return b
@@ -77,17 +77,17 @@ func (b Base2Bytes) Round(n int) Base2Bytes {
 	idx := 0
 
 	switch {
-	case b > Exbibyte:
+	case b > Exbibyte || b < -Exbibyte:
 		idx = n
-	case b > Pebibyte:
+	case b > Pebibyte || b < -Pebibyte:
 		idx = n + 1
-	case b > Tebibyte:
+	case b > Tebibyte || b < -Tebibyte:
 		idx = n + 2
-	case b > Gibibyte:
+	case b > Gibibyte || b < -Gibibyte:
 		idx = n + 3
-	case b > Mebibyte:
+	case b > Mebibyte || b < -Mebibyte:
 		idx = n + 4
-	case b > Kibibyte:
+	case b > Kibibyte || b < -Kibibyte:
 		idx = n + 5
 	}
 
@@ -144,17 +144,17 @@ func (m MetricBytes) String() string {
 // Floor returns MetricBytes with all but the largest unit zeroed out. So that e.g. 1GB1MB1KB → 1GB.
 func (b MetricBytes) Floor() MetricBytes {
 	switch {
-	case b > Exabyte:
+	case b > Exabyte || b < -Exabyte:
 		return (b / Exabyte) * Exabyte
-	case b > Petabyte:
+	case b > Petabyte || b < -Petabyte:
 		return (b / Petabyte) * Petabyte
-	case b > Terabyte:
+	case b > Terabyte || b < -Terabyte:
 		return (b / Terabyte) * Terabyte
-	case b > Gigabyte:
+	case b > Gigabyte || b < -Gigabyte:
 		return (b / Gigabyte) * Gigabyte
-	case b > Megabyte:
+	case b > Megabyte || b < -Megabyte:
 		return (b / Megabyte) * Megabyte
-	case b > Kilobyte:
+	case b > Kilobyte || b < -Kilobyte:
 		return (b / Kilobyte) * Kilobyte
 	default:
 		return b
@@ -166,17 +166,17 @@ func (b MetricBytes) Round(n int) MetricBytes {
 	idx := 0
 
 	switch {
-	case b > Exabyte:
+	case b > Exabyte || b < -Exabyte:
 		idx = n
-	case b > Petabyte:
+	case b > Petabyte || b < -Petabyte:
 		idx = n + 1
-	case b > Terabyte:
+	case b > Terabyte || b < -Terabyte:
 		idx = n + 2
-	case b > Gigabyte:
+	case b > Gigabyte || b < -Gigabyte:
 		idx = n + 3
-	case b > Megabyte:
+	case b > Megabyte || b < -Megabyte:
 		idx = n + 4
-	case b > Kilobyte:
+	case b > Kilobyte || b < -Kilobyte:
 		idx = n + 5
 	}
 
